@@ -339,6 +339,15 @@ func Empty() Observable {
 	return Observable(source)
 }
 
+// Never creates create an Observable that emits no items and does not terminate.
+func Never() Observable {
+	source := make(chan interface{})
+	go func() {
+		select {}
+	}()
+	return Observable(source)
+}
+
 // Interval creates an Observable emitting incremental integers infinitely between
 // each given time interval.
 func Interval(term chan struct{}, interval time.Duration) Observable {
