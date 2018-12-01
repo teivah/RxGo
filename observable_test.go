@@ -6,12 +6,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/reactivex/rxgo/fx"
 	"github.com/reactivex/rxgo/handlers"
 	"github.com/reactivex/rxgo/iterable"
 	"github.com/reactivex/rxgo/optional"
 	"github.com/reactivex/rxgo/options"
 	"github.com/stretchr/testify/assert"
-	"strconv"
 	"sync/atomic"
 )
 
@@ -149,7 +149,7 @@ func TestStartOperator(t *testing.T) {
 	responseCodes := []int{}
 	done := false
 
-	d1 := Supplier(func() interface{} {
+	d1 := fx.Supplier(func() interface{} {
 		result := &http.Response{
 			Status:     "200 OK",
 			StatusCode: 200,
@@ -162,7 +162,7 @@ func TestStartOperator(t *testing.T) {
 		return res
 	})
 
-	d2 := Supplier(func() interface{} {
+	d2 := fx.Supplier(func() interface{} {
 		result := &http.Response{
 			Status:     "301 Moved Permanently",
 			StatusCode: 301,
@@ -175,7 +175,7 @@ func TestStartOperator(t *testing.T) {
 		return res
 	})
 
-	d3 := Supplier(func() interface{} {
+	d3 := fx.Supplier(func() interface{} {
 		result := &http.Response{
 			Status:     "500 Server Error",
 			StatusCode: 500,
@@ -188,7 +188,7 @@ func TestStartOperator(t *testing.T) {
 		return res
 	})
 
-	e1 := Supplier(func() interface{} {
+	e1 := fx.Supplier(func() interface{} {
 		err := errors.New("Bad URL")
 		res, err := fakeGet("badurl.err", 100*time.Millisecond, err)
 		if err != nil {
@@ -197,7 +197,7 @@ func TestStartOperator(t *testing.T) {
 		return res
 	})
 
-	d4 := Supplier(func() interface{} {
+	d4 := fx.Supplier(func() interface{} {
 		result := &http.Response{
 			Status:     "404 Not Found",
 			StatusCode: 400,
@@ -339,56 +339,16 @@ func TestSubscribeToObserver(t *testing.T) {
 }
 
 func TestObservableMap(t *testing.T) {
-	items := []interface{}{1, 2, 3, "foo", "bar", []byte("baz")}
-	it, err := iterable.New(items)
-	if err != nil {
-		t.Fail()
-	}
-
-	stream1 := From(it)
-
-	multiplyAllIntBy := func(factor interface{}) Function {
-		return func(item interface{}) interface{} {
-			if num, ok := item.(int); ok {
-				return num * factor.(int)
-			}
-			return item
-		}
-	}
-	stream2 := stream1.Map(multiplyAllIntBy(10))
-
-	nums := []int{}
-	onNext := handlers.NextFunc(func(item interface{}) {
-		if num, ok := item.(int); ok {
-			nums = append(nums, num)
-		}
+	stream := Just(1, 2, 3).Map(func(i interface{}) interface{} {
+		return i.(int) * 10
 	})
 
-	stream2.Subscribe(onNext).Block()
-
-	assert.Exactly(t, []int{10, 20, 30}, nums)
+	AssertThatObservable(t, stream, HasItems(10, 20, 30))
 }
 
 func TestObservableTake(t *testing.T) {
-	items := []interface{}{1, 2, 3, 4, 5}
-	it, err := iterable.New(items)
-	if err != nil {
-		t.Fail()
-	}
-
-	stream1 := From(it)
-	stream2 := stream1.Take(3)
-
-	nums := []int{}
-	onNext := handlers.NextFunc(func(item interface{}) {
-		if num, ok := item.(int); ok {
-			nums = append(nums, num)
-		}
-	})
-
-	stream2.Subscribe(onNext).Block()
-
-	assert.Exactly(t, []int{1, 2, 3}, nums)
+	stream := Just(1, 2, 3, 4, 5).Take(3)
+	AssertThatObservable(t, stream, HasItems(1, 2, 3))
 }
 
 func TestObservableTakeWithEmpty(t *testing.T) {
@@ -456,7 +416,7 @@ func TestObservableFilter(t *testing.T) {
 
 	stream1 := From(it)
 
-	lt := func(target interface{}) Predicate {
+	lt := func(target interface{}) fx.Predicate {
 		return func(item interface{}) bool {
 			if num, ok := item.(int); ok {
 				if num < 9 {
@@ -1355,39 +1315,4 @@ func TestObservableForEach(t *testing.T) {
 		assert.Equal(expectedChars[n], char)
 	}
 	assert.Equal("bang", sub.Error())
-}
-
-func TestOnErrorReturn(t *testing.T) {
-	got := make([]int, 0)
-
-	obs := Just(1, 2, 3, errors.New("7"), 4).
-		OnErrorReturn(func(e error) interface{} {
-			i, err := strconv.Atoi(e.Error())
-			if err != nil {
-				t.Fail()
-			}
-			return i
-		})
-
-	obs.Subscribe(handlers.NextFunc(func(i interface{}) {
-		got = append(got, i.(int))
-	})).Block()
-
-	assert.Equal(t, []int{1, 2, 3, 7}, got)
-}
-
-func TestOnErrorResumeNext(t *testing.T) {
-	got := make([]int, 0)
-
-	obs := Just(1, 2, 3, errors.New("7"), 4).
-		OnErrorResumeNext(func(e error) Observable {
-			return Just(5, 6, errors.New("8"), 9)
-		})
-
-	err := obs.Subscribe(handlers.NextFunc(func(i interface{}) {
-		got = append(got, i.(int))
-	})).Block()
-
-	assert.Equal(t, []int{1, 2, 3, 5, 6}, got)
-	assert.NotNil(t, err)
 }
