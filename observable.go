@@ -39,8 +39,10 @@ type Observable interface {
 	ElementAt(index uint) Single
 	FirstOrDefault(defaultValue interface{}) Single
 	LastOrDefault(defaultValue interface{}) Single
-	getOnonErrorReturn() ErrorFunction
+	getOnErrorReturn() ErrorFunction
 	getOnErrorResumeNext() ErrorToObservableFunction
+	getRetryCount() int
+	Retry(count int) Observable
 }
 
 // observable is a structure handling a channel of interface{} and implementing Observable
@@ -50,6 +52,7 @@ type observable struct {
 	observableFactory   func() Observable
 	onErrorReturn       ErrorFunction
 	onErrorResumeNext   ErrorToObservableFunction
+	count               int
 }
 
 // NewObservable creates an Observable
@@ -90,8 +93,13 @@ func iterate(observable Observable, observer Observer) error {
 		} else {
 			switch item := item.(type) {
 			case error:
-				if observable.getOnonErrorReturn() != nil {
-					observer.OnNext(observable.getOnonErrorReturn()(item))
+				if observable.getRetryCount() != 0 {
+					observer = observable.Subscribe(observer)
+					//observer.
+				}
+
+				if observable.getOnErrorReturn() != nil {
+					observer.OnNext(observable.getOnErrorReturn()(item))
 					// Stop the subscription
 					return nil
 				} else if observable.getOnErrorResumeNext() != nil {
@@ -559,10 +567,19 @@ func (o *observable) OnErrorResumeNext(resumeSequence ErrorToObservableFunction)
 	return o
 }
 
-func (o *observable) getOnonErrorReturn() ErrorFunction {
+func (o *observable) getOnErrorReturn() ErrorFunction {
 	return o.onErrorReturn
 }
 
 func (o *observable) getOnErrorResumeNext() ErrorToObservableFunction {
 	return o.onErrorResumeNext
+}
+
+func (o *observable) Retry(count int) Observable {
+	o.count = count
+	return o
+}
+
+func (o *observable) getRetryCount() int {
+	return o.count
 }

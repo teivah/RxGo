@@ -4,3 +4,8 @@ package rxgo
 type Iterator interface {
 	Next() (interface{}, error)
 }
+
+type RewindIterator interface {
+	Iterator
+	Rewind()
+}
