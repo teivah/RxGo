@@ -1,4 +1,4 @@
-package rxgo
+package disposable
 
 type Disposable interface {
 	Dispose()

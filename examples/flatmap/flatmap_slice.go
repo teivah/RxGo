@@ -3,16 +3,17 @@ package main
 import (
 	"fmt"
 
-	"github.com/reactivex/rxgo"
 	"github.com/reactivex/rxgo/handlers"
+	"github.com/reactivex/rxgo/observable"
+	"github.com/reactivex/rxgo/observer"
 )
 
 func main() {
-	primeSequence := rxgo.Just([]int{2, 3, 5, 7, 11, 13})
+	primeSequence := observable.Just([]int{2, 3, 5, 7, 11, 13})
 
 	primeSequence.
-		FlatMap(func(primes interface{}) rxgo.Observable {
-			return rxgo.Create(func(emitter rxgo.Observer, disposed bool) {
+		FlatMap(func(primes interface{}) observable.Observable {
+			return observable.Create(func(emitter observer.Observer, disposed bool) {
 				for _, prime := range primes.([]int) {
 					emitter.OnNext(prime)
 				}

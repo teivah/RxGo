@@ -7,6 +7,11 @@ import "github.com/reactivex/rxgo/errors"
 // Iterable converts channel and slice into an Iterator.
 type Iterable <-chan interface{}
 
+// Iterator type is implemented by Iterable.
+type Iterator interface {
+	Next() (interface{}, error)
+}
+
 // Next returns the next element in an Iterable sequence and an
 // error when it reaches the end. Next registers Iterable to Iterator.
 func (it Iterable) Next() (interface{}, error) {

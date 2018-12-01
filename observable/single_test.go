@@ -1,4 +1,4 @@
-package rxgo
+package observable
 
 import (
 	"github.com/reactivex/rxgo/handlers"

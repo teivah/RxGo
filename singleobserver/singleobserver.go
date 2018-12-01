@@ -1,13 +1,14 @@
-package rxgo
+package singleobserver
 
 import (
+	"github.com/reactivex/rxgo/disposable"
 	"github.com/reactivex/rxgo/handlers"
 )
 
 // SingleObserver represents a group of EventHandlers.
 type SingleObserver interface {
 	handlers.EventHandler
-	Disposable
+	disposable.Disposable
 
 	OnSuccess(item interface{})
 	OnError(err error)

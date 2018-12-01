@@ -1,4 +1,4 @@
-package rxgo
+package observable
 
 import (
 	"sync"
@@ -7,13 +7,16 @@ import (
 	"github.com/reactivex/rxgo/errors"
 	"github.com/reactivex/rxgo/fx"
 	"github.com/reactivex/rxgo/handlers"
+	"github.com/reactivex/rxgo/iterable"
+	"github.com/reactivex/rxgo/observer"
 	"github.com/reactivex/rxgo/optional"
 	"github.com/reactivex/rxgo/options"
+	"github.com/reactivex/rxgo/single"
 )
 
 // Observable is a basic observable interface
 type Observable interface {
-	Iterator
+	iterable.Iterator
 
 	Distinct(apply fx.Function) Observable
 	DistinctUntilChanged(apply fx.Function) Observable
@@ -25,7 +28,7 @@ type Observable interface {
 	Scan(apply fx.Function2) Observable
 	Skip(nth uint) Observable
 	SkipLast(nth uint) Observable
-	Subscribe(handler handlers.EventHandler, opts ...options.Option) Observer
+	Subscribe(handler handlers.EventHandler, opts ...options.Option) observer.Observer
 	Take(nth uint) Observable
 	TakeLast(nth uint) Observable
 	TakeWhile(apply fx.Predicate) Observable
@@ -34,15 +37,15 @@ type Observable interface {
 	ToMapWithValueSelector(keySelector fx.Function, valueSelector fx.Function) Observable
 	ZipFromObservable(publisher Observable, zipper fx.Function2) Observable
 	ForEach(nextFunc handlers.NextFunc, errFunc handlers.ErrFunc,
-		doneFunc handlers.DoneFunc, opts ...options.Option) Observer
+		doneFunc handlers.DoneFunc, opts ...options.Option) observer.Observer
 
-	Reduce(apply fx.Function2) OptionalSingle
+	Reduce(apply fx.Function2) single.OptionalSingle
 
 	Publish() ConnectableObservable
-	Count() Single
-	ElementAt(index uint) Single
-	FirstOrDefault(defaultValue interface{}) Single
-	LastOrDefault(defaultValue interface{}) Single
+	Count() single.Single
+	ElementAt(index uint) single.Single
+	FirstOrDefault(defaultValue interface{}) single.Single
+	LastOrDefault(defaultValue interface{}) single.Single
 }
 
 // observable is a structure handling a channel of interface{} and implementing Observable
@@ -68,13 +71,13 @@ func NewObservableFromChannel(ch chan interface{}) Observable {
 }
 
 // CheckHandler checks the underlying type of an EventHandler.
-func CheckEventHandler(handler handlers.EventHandler) Observer {
-	return NewObserver(handler)
+func CheckEventHandler(handler handlers.EventHandler) observer.Observer {
+	return observer.NewObserver(handler)
 }
 
 // CheckHandler checks the underlying type of an EventHandler.
-func CheckEventHandlers(handler ...handlers.EventHandler) Observer {
-	return NewObserver(handler...)
+func CheckEventHandlers(handler ...handlers.EventHandler) observer.Observer {
+	return observer.NewObserver(handler...)
 }
 
 // Next returns the next item on the Observable.
@@ -86,7 +89,7 @@ func (o *observable) Next() (interface{}, error) {
 }
 
 // Subscribe subscribes an EventHandler and returns a Subscription channel.
-func (o *observable) Subscribe(handler handlers.EventHandler, opts ...options.Option) Observer {
+func (o *observable) Subscribe(handler handlers.EventHandler, opts ...options.Option) observer.Observer {
 	ob := CheckEventHandler(handler)
 
 	observableOptions := options.ParseOptions(opts...)
@@ -189,7 +192,7 @@ func (o *observable) Unsubscribe() subscription.Subscription {
 }
 */
 
-func (o *observable) ElementAt(index uint) Single {
+func (o *observable) ElementAt(index uint) single.Single {
 	out := make(chan interface{})
 	go func() {
 		takeCount := 0
@@ -204,7 +207,7 @@ func (o *observable) ElementAt(index uint) Single {
 		out <- errors.New(errors.ElementAtError)
 		close(out)
 	}()
-	return NewSingleFromChannel(out)
+	return single.NewSingleFromChannel(out)
 }
 
 // Take takes first n items in the original Obserable and returns
@@ -388,8 +391,8 @@ func Defer(f func() Observable) Observable {
 	}
 }
 
-// From creates a new Observable from an Iterator.
-func From(it Iterator) Observable {
+// From creates a new Observable from an rxgo.Iterator.
+func From(it iterable.Iterator) Observable {
 	source := make(chan interface{})
 	go func() {
 		for {
@@ -404,8 +407,8 @@ func From(it Iterator) Observable {
 	return &observable{ch: source}
 }
 
-// Error returns an Observable that invokes an Observer's onError method
-// when the Observer subscribes to it.
+// Error returns an Observable that invokes an observer.Observer's onError method
+// when the observer.Observer subscribes to it.
 func Error(err error) Observable {
 	return &observable{
 		ch:                  nil,
@@ -537,7 +540,7 @@ func Start(f fx.Supplier, fs ...fx.Supplier) Observable {
 	return &observable{ch: source}
 }
 
-func (o *observable) Reduce(apply fx.Function2) OptionalSingle {
+func (o *observable) Reduce(apply fx.Function2) single.OptionalSingle {
 	out := make(chan optional.Optional)
 	go func() {
 		var acc interface{}
@@ -553,10 +556,10 @@ func (o *observable) Reduce(apply fx.Function2) OptionalSingle {
 		}
 		close(out)
 	}()
-	return NewOptionalSingleFromChannel(out)
+	return single.NewOptionalSingleFromChannel(out)
 }
 
-func (o *observable) Count() Single {
+func (o *observable) Count() single.Single {
 	out := make(chan interface{})
 	go func() {
 		var count int64
@@ -566,12 +569,12 @@ func (o *observable) Count() Single {
 		out <- count
 		close(out)
 	}()
-	return NewSingleFromChannel(out)
+	return single.NewSingleFromChannel(out)
 }
 
 // FirstOrDefault returns new Observable which emit only first item.
 // If the observable fails to emit any items, it emits a default value.
-func (o *observable) FirstOrDefault(defaultValue interface{}) Single {
+func (o *observable) FirstOrDefault(defaultValue interface{}) single.Single {
 	out := make(chan interface{})
 	go func() {
 		first := defaultValue
@@ -582,12 +585,12 @@ func (o *observable) FirstOrDefault(defaultValue interface{}) Single {
 		out <- first
 		close(out)
 	}()
-	return NewSingleFromChannel(out)
+	return single.NewSingleFromChannel(out)
 }
 
 // Last returns a new Observable which emit only last item.
 // If the observable fails to emit any items, it emits a default value.
-func (o *observable) LastOrDefault(defaultValue interface{}) Single {
+func (o *observable) LastOrDefault(defaultValue interface{}) single.Single {
 	out := make(chan interface{})
 	go func() {
 		last := defaultValue
@@ -597,7 +600,7 @@ func (o *observable) LastOrDefault(defaultValue interface{}) Single {
 		out <- last
 		close(out)
 	}()
-	return NewSingleFromChannel(out)
+	return single.NewSingleFromChannel(out)
 }
 
 // TakeWhile emits items emitted by an Observable as long as the
@@ -685,7 +688,7 @@ func (o *observable) ZipFromObservable(publisher Observable, zipper fx.Function2
 }
 
 func (o *observable) ForEach(nextFunc handlers.NextFunc, errFunc handlers.ErrFunc,
-	doneFunc handlers.DoneFunc, opts ...options.Option) Observer {
+	doneFunc handlers.DoneFunc, opts ...options.Option) observer.Observer {
 	return o.Subscribe(CheckEventHandlers(nextFunc, errFunc, doneFunc), opts...)
 }
 

@@ -1,14 +1,15 @@
-package rxgo
+package observable
 
 import (
 	"testing"
 
+	"github.com/reactivex/rxgo/observer"
 	"github.com/stretchr/testify/mock"
 )
 
 func TestFlatMapCompletesWhenSequenceIsEmpty(t *testing.T) {
 	// given
-	emissionObserver := NewObserverMock()
+	emissionObserver := observer.NewObserverMock()
 
 	// and empty sequence
 	sequence := Empty()
@@ -27,7 +28,7 @@ func TestFlatMapCompletesWhenSequenceIsEmpty(t *testing.T) {
 
 func TestFlatMapReturnsSameElementBecauseIdentifyApplied(t *testing.T) {
 	// given
-	emissionObserver := NewObserverMock()
+	emissionObserver := observer.NewObserverMock()
 
 	// and sequence containing one element
 	element := 1
@@ -47,7 +48,7 @@ func TestFlatMapReturnsSameElementBecauseIdentifyApplied(t *testing.T) {
 
 func TestFlatMapReturnsSliceElements(t *testing.T) {
 	// given
-	emissionObserver := NewObserverMock()
+	emissionObserver := observer.NewObserverMock()
 
 	// and sequence containing slice with few elements
 	element1 := "element1"

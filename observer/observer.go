@@ -1,13 +1,14 @@
-package rxgo
+package observer
 
 import (
+	"github.com/reactivex/rxgo/disposable"
 	"github.com/reactivex/rxgo/handlers"
 )
 
 // Observer represents a group of EventHandlers.
 type Observer interface {
 	handlers.EventHandler
-	Disposable
+	disposable.Disposable
 
 	OnNext(item interface{})
 	OnError(err error)

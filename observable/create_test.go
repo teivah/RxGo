@@ -1,18 +1,19 @@
-package rxgo
+package observable
 
 import (
 	"testing"
 
 	"github.com/reactivex/rxgo/errors"
+	"github.com/reactivex/rxgo/observer"
 	"github.com/stretchr/testify/mock"
 )
 
 func TestEmitsNoElements(t *testing.T) {
 	// given
-	mockedObserver := NewObserverMock()
+	mockedObserver := observer.NewObserverMock()
 
 	// and
-	sequence := Create(func(emitter Observer, disposed bool) {
+	sequence := Create(func(emitter observer.Observer, disposed bool) {
 		emitter.OnDone()
 	})
 
@@ -27,13 +28,13 @@ func TestEmitsNoElements(t *testing.T) {
 
 func TestEmitsElements(t *testing.T) {
 	// given
-	mockedObserver := NewObserverMock()
+	mockedObserver := observer.NewObserverMock()
 
 	// and
 	elementsToEmit := []int{1, 2, 3, 4, 5}
 
 	// and
-	sequence := Create(func(emitter Observer, disposed bool) {
+	sequence := Create(func(emitter observer.Observer, disposed bool) {
 		for _, el := range elementsToEmit {
 			emitter.OnNext(el)
 		}
@@ -53,10 +54,10 @@ func TestEmitsElements(t *testing.T) {
 
 func TestOnlyFirstDoneCounts(t *testing.T) {
 	// given
-	mockedObserver := NewObserverMock()
+	mockedObserver := observer.NewObserverMock()
 
 	// and
-	sequence := Create(func(emitter Observer, disposed bool) {
+	sequence := Create(func(emitter observer.Observer, disposed bool) {
 		emitter.OnDone()
 		emitter.OnDone()
 	})
@@ -72,10 +73,10 @@ func TestOnlyFirstDoneCounts(t *testing.T) {
 
 func TestDoesntEmitElementsAfterDone(t *testing.T) {
 	// given
-	mockedObserver := NewObserverMock()
+	mockedObserver := observer.NewObserverMock()
 
 	// and
-	sequence := Create(func(emitter Observer, disposed bool) {
+	sequence := Create(func(emitter observer.Observer, disposed bool) {
 		emitter.OnDone()
 		emitter.OnNext("it cannot be emitted")
 	})
@@ -92,13 +93,13 @@ func TestDoesntEmitElementsAfterDone(t *testing.T) {
 // to clear out error emission
 func testEmitsError(t *testing.T) {
 	// given
-	mockedObserver := NewObserverMock()
+	mockedObserver := observer.NewObserverMock()
 
 	// and
 	expectedError := errors.New(errors.UndefinedError, "expected")
 
 	// and
-	sequence := Create(func(emitter Observer, disposed bool) {
+	sequence := Create(func(emitter observer.Observer, disposed bool) {
 		emitter.OnError(expectedError)
 	})
 
@@ -114,13 +115,13 @@ func testEmitsError(t *testing.T) {
 // to clear out error emission
 func testFinishEmissionOnError(t *testing.T) {
 	// given
-	mockedObserver := NewObserverMock()
+	mockedObserver := observer.NewObserverMock()
 
 	// and
 	expectedError := errors.New(errors.UndefinedError, "expected")
 
 	// and
-	sequence := Create(func(emitter Observer, disposed bool) {
+	sequence := Create(func(emitter observer.Observer, disposed bool) {
 		emitter.OnError(expectedError)
 		emitter.OnNext("some element which cannot be emitted")
 		emitter.OnDone()

@@ -4,12 +4,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/reactivex/rxgo"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestIterableImplementsIterator(t *testing.T) {
-	assert.Implements(t, (*rxgo.Iterator)(nil), Iterable(nil))
+	assert.Implements(t, (*Iterator)(nil), Iterable(nil))
 }
 
 func TestCreateHomogenousIterable(t *testing.T) {

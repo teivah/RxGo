@@ -1,21 +1,22 @@
-package rxgo
+package single
 
 import (
 	"github.com/reactivex/rxgo/fx"
 	"github.com/reactivex/rxgo/handlers"
 	"github.com/reactivex/rxgo/optional"
 	"github.com/reactivex/rxgo/options"
+	"github.com/reactivex/rxgo/singleobserver"
 )
 
 // Single is similar to an Observable but emits only one single element or an error notification.
 type Single interface {
 	Filter(apply fx.Predicate) OptionalSingle
 	Map(apply fx.Function) Single
-	Subscribe(handler handlers.EventHandler, opts ...options.Option) SingleObserver
+	Subscribe(handler handlers.EventHandler, opts ...options.Option) singleobserver.SingleObserver
 }
 
 type OptionalSingle interface {
-	Subscribe(handler handlers.EventHandler, opts ...options.Option) SingleObserver
+	Subscribe(handler handlers.EventHandler, opts ...options.Option) singleobserver.SingleObserver
 }
 
 type single struct {
@@ -27,8 +28,8 @@ type optionalSingle struct {
 }
 
 // CheckHandler checks the underlying type of an EventHandler.
-func CheckSingleEventHandler(handler handlers.EventHandler) SingleObserver {
-	return NewSingleObserver(handler)
+func CheckSingleEventHandler(handler handlers.EventHandler) singleobserver.SingleObserver {
+	return singleobserver.NewSingleObserver(handler)
 }
 
 func NewSingle() Single {
@@ -77,7 +78,7 @@ func (s *single) Map(apply fx.Function) Single {
 	return &single{ch: out}
 }
 
-func (s *single) Subscribe(handler handlers.EventHandler, opts ...options.Option) SingleObserver {
+func (s *single) Subscribe(handler handlers.EventHandler, opts ...options.Option) singleobserver.SingleObserver {
 	ob := CheckSingleEventHandler(handler)
 
 	go func() {
@@ -99,7 +100,7 @@ func (s *single) Subscribe(handler handlers.EventHandler, opts ...options.Option
 	return ob
 }
 
-func (s *optionalSingle) Subscribe(handler handlers.EventHandler, opts ...options.Option) SingleObserver {
+func (s *optionalSingle) Subscribe(handler handlers.EventHandler, opts ...options.Option) singleobserver.SingleObserver {
 	ob := CheckSingleEventHandler(handler)
 
 	go func() {

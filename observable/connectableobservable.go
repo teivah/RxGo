@@ -1,19 +1,20 @@
-package rxgo
+package observable
 
 import (
 	"github.com/reactivex/rxgo/handlers"
+	"github.com/reactivex/rxgo/observer"
 	"github.com/reactivex/rxgo/options"
 	"sync"
 )
 
 type ConnectableObservable interface {
-	Connect() Observer
-	Subscribe(handler handlers.EventHandler, opts ...options.Option) Observer
+	Connect() observer.Observer
+	Subscribe(handler handlers.EventHandler, opts ...options.Option) observer.Observer
 }
 
 type connectableObservable struct {
 	observable Observable
-	observers  []Observer
+	observers  []observer.Observer
 }
 
 func NewConnectableObservable(observable Observable) ConnectableObservable {
@@ -22,13 +23,13 @@ func NewConnectableObservable(observable Observable) ConnectableObservable {
 	}
 }
 
-func (c *connectableObservable) Subscribe(handler handlers.EventHandler, opts ...options.Option) Observer {
+func (c *connectableObservable) Subscribe(handler handlers.EventHandler, opts ...options.Option) observer.Observer {
 	ob := CheckEventHandler(handler)
 	c.observers = append(c.observers, ob)
 	return ob
 }
 
-func (c *connectableObservable) Connect() Observer {
+func (c *connectableObservable) Connect() observer.Observer {
 	source := make([]interface{}, 0)
 
 	for {
@@ -46,7 +47,7 @@ func (c *connectableObservable) Connect() Observer {
 		local := make([]interface{}, len(source))
 		copy(local, source)
 
-		go func(ob Observer) {
+		go func(ob observer.Observer) {
 			defer wg.Done()
 			var e error
 		OuterLoop:
@@ -71,7 +72,7 @@ func (c *connectableObservable) Connect() Observer {
 		}(ob)
 	}
 
-	ob := NewObserver()
+	ob := observer.NewObserver()
 	go func() {
 		wg.Wait()
 		ob.OnDone()
